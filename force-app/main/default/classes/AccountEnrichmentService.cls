@@ -2,19 +2,6 @@
  * AccountEnrichmentService
  *
  * Enriches Account records with primary Contact details.
- * DEMO NOTE: Contains 3 intentional bugs for the Issue Triage Agent showcase.
- *
- * BUG 1 — SOQL inside for loop (line 44)
- *   Impact : Governor LimitException once accountIds list exceeds ~100 records
- *   Trigger: Call enrichAccountsWithContactData() with a large list
- *
- * BUG 2 — List index out of bounds (line 48)
- *   Impact : ListException: List index out of bounds: 0
- *   Trigger: Call with an Account that has zero Contacts
- *
- * BUG 3 — Null pointer dereference (line 52)
- *   Impact : System.NullPointerException
- *   Trigger: Call with a Contact whose Email field is null
  */
 public class AccountEnrichmentService {
 
@@ -48,7 +35,13 @@ public class AccountEnrichmentService {
 
     /**
      * Bulk enrichment — reads Contact data and stamps it onto each Account.
-     * INTENTIONALLY BROKEN for demo purposes. Do not use in production.
+     *
+     * FIX 1: Moved Contact SOQL outside the for-loop into a single bulk query,
+     *         keyed by AccountId, to avoid hitting the 100-SOQL governor limit.
+     * FIX 2: Added isEmpty() guard before accessing contacts[0] to prevent
+     *         System.ListException: List index out of bounds: 0.
+     * FIX 3: Added null check on primary.Email before calling .toLowerCase()
+     *         to prevent System.NullPointerException.
      */
     @AuraEnabled
     public static void enrichAccountsWithContactData(List<Id> accountIds) {
@@ -59,22 +52,34 @@ public class AccountEnrichmentService {
                 WHERE Id IN :accountIds
             ];
 
+            // FIX 1: Single bulk SOQL query for all relevant Contacts, outside the loop
+            List<Contact> allContacts = [
+                SELECT Id, Email, Phone, AccountId
+                FROM Contact
+                WHERE AccountId IN :accountIds
+            ];
+
+            // Build a map of AccountId -> first Contact found
+            Map<Id, Contact> primaryContactByAccountId = new Map<Id, Contact>();
+            for (Contact c : allContacts) {
+                if (!primaryContactByAccountId.containsKey(c.AccountId)) {
+                    primaryContactByAccountId.put(c.AccountId, c);
+                }
+            }
+
             List<Account> toUpdate = new List<Account>();
 
             for (Account acc : accounts) {
-                // BUG 1: SOQL inside for loop — fires a query on every iteration
-                List<Contact> contacts = [
-                    SELECT Id, Email, Phone
-                    FROM Contact
-                    WHERE AccountId = :acc.Id
-                    LIMIT 1
-                ];
+                // FIX 2: Guard against accounts with no contacts (was: contacts[0] with no size check)
+                if (!primaryContactByAccountId.containsKey(acc.Id)) {
+                    continue;
+                }
 
-                // BUG 2: No list-size check — throws ListException when account has no contacts
-                Contact primary = contacts[0];
+                Contact primary = primaryContactByAccountId.get(acc.Id);
 
-                // BUG 3: Null dereference — throws NullPointerException when Email is null
-                acc.Description = 'Primary contact: ' + primary.Email.toLowerCase();
+                // FIX 3: Null-safe Email access (was: primary.Email.toLowerCase() with no null check)
+                String emailLower = (primary.Email != null) ? primary.Email.toLowerCase() : '';
+                acc.Description = 'Primary contact: ' + emailLower;
                 acc.Phone = primary.Phone;
                 toUpdate.add(acc);
             }
