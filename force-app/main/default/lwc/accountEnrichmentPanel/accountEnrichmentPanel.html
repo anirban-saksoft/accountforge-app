@@ -1,0 +1,28 @@
+<template>
+    <lightning-card title="Account Enrichment" icon-name="standard:account">
+        <div class="slds-p-around_medium">
+
+            <template if:true={accounts.data}>
+                <lightning-datatable
+                    key-field="Id"
+                    data={accounts.data}
+                    columns={columns}
+                    onrowselection={handleRowSelection}>
+                </lightning-datatable>
+            </template>
+
+            <div class="slds-m-top_medium">
+                <lightning-button
+                    label="Enrich Selected Accounts"
+                    variant="brand"
+                    disabled={isEnrichDisabled}
+                    onclick={handleEnrichSelected}>
+                </lightning-button>
+                <template if:true={isLoading}>
+                    <lightning-spinner alternative-text="Enriching accounts" size="small"></lightning-spinner>
+                </template>
+            </div>
+
+        </div>
+    </lightning-card>
+</template>

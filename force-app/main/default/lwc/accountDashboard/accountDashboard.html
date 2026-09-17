@@ -1,0 +1,38 @@
+<template>
+    <lightning-card title="Account Dashboard" icon-name="standard:account">
+        <div class="slds-p-around_medium">
+
+            <template if:true={account.data}>
+                <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                    <div class="slds-col">
+                        <p class="slds-text-heading_small slds-m-bottom_x-small">{account.data.Name}</p>
+                        <p class="slds-text-body_regular">Annual Revenue: {formattedRevenue}</p>
+                        <p class="slds-text-body_regular">Primary Contact: {primaryContactName}</p>
+                    </div>
+                </div>
+            </template>
+
+            <template if:true={error}>
+                <div class="slds-box slds-theme_error slds-m-bottom_small">
+                    <p>{error}</p>
+                </div>
+            </template>
+
+            <div class="slds-m-top_medium">
+                <lightning-input
+                    label="Account ID"
+                    placeholder="0010000000XXXXX"
+                    value={manualAccountId}
+                    onchange={handleIdChange}>
+                </lightning-input>
+                <lightning-button
+                    class="slds-m-top_small"
+                    label="Load Account"
+                    variant="brand"
+                    onclick={handleLoadAccount}>
+                </lightning-button>
+            </div>
+
+        </div>
+    </lightning-card>
+</template>

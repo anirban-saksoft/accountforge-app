@@ -1,0 +1,36 @@
+<template>
+    <lightning-card title="Case Escalation Panel" icon-name="standard:case">
+        <div class="slds-p-around_medium">
+
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading cases..."></lightning-spinner>
+            </template>
+
+            <template for:each={cases} for:item="c">
+                <div key={c.Id} class="slds-box slds-m-bottom_small">
+                    <div class="slds-grid slds-gutters slds-grid_vertical-align-center">
+                        <div class="slds-col">
+                            <p class="slds-text-heading_small">{c.Subject}</p>
+                            <p class="slds-text-body_small">
+                                Status: {c.Status} &nbsp;|&nbsp; Priority: {c.Priority}
+                            </p>
+                        </div>
+                        <div class="slds-col slds-no-flex">
+                            <lightning-button
+                                label="Escalate"
+                                variant="destructive"
+                                data-id={c.Id}
+                                onclick={handleEscalate}>
+                            </lightning-button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <template if:false={hasCases}>
+                <p class="slds-text-color_weak slds-text-align_center">No open cases found.</p>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>
